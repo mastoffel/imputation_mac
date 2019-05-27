@@ -1,0 +1,8 @@
+*.Rproj
+data/
+old/
+results/
+.Rhistory
+.Rproj.user/
+.Rapp.history
+.DS_Store
