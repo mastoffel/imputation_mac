@@ -37,25 +37,27 @@ if (purrr::is_empty(args)) {
 ### Contains PLINK FILES, AlphaImputeLinux and Pedigree.txt ###
 
 # on mac
-#plink_geno_path <- "../sheep/data/SNP_chip/"
+plink_geno_path <- "../sheep/data/SNP_chip/"
 
 # on eddie, also contains the AlphaImputeLinux file and the Pedigree.txt
-plink_geno_path <- "/exports/csce/eddie/biology/groups/pemberton/martin/plink_genotypes/"
+#plink_geno_path <- "/exports/csce/eddie/biology/groups/pemberton/martin/plink_genotypes/"
+
 ####################
 
 
 ### OUTPUT FOLDER ###
 
 # on mac
-#output_path_chr <- paste0("all_chr_cv/chr_", chr_num)
-#output_path_main_files <- paste0(output_path_chr, "/AI_main_files/")
+output_path_chr <- paste0("data/chr_", chr_num)
+output_path_main_files <- paste0(output_path_chr, "/AI_main_files/")
 
 # on eddie
-output_path_chr <- paste0("/exports/eddie/scratch/v1mstoff/full_1_5/chr_", chr_num) # main folder
-output_path_main_files <-  paste0(output_path_chr, "/AI_main_files/") # main files for chr1
+#output_path_chr <- paste0("/exports/eddie/scratch/v1mstoff/full_1_5/chr_", chr_num) # main folder
+#output_path_main_files <-  paste0(output_path_chr, "/AI_main_files/") # main files for chr1
 
 if (!dir.exists(output_path_chr)) dir.create(output_path_chr, recursive = TRUE)
 if (!dir.exists(output_path_main_files)) dir.create(output_path_main_files)
+
 #####################
 
 # plink name

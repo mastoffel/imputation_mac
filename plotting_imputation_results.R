@@ -2,21 +2,23 @@ library(tidyverse)
 library(ggplot2)
 library(ggrepel)
 library(forcats)
-run_names <- c("cv_1_5_hap_3chr", 
-               "cv_2_10_hap_3chr", 
-               "cv_10_30_hap_3chr", 
-               "HMM_1_5_hap_3chr", 
+run_names <- c("cv_1_5_hap_3chr",
+               "cv_2_10_hap_3chr",
+               "cv_10_30_hap_3chr",
+               "HMM_1_5_hap_3chr",
                "HMM_2_10_hap_3chr",
                "HMM_10_30_hap_3chr")
 
+#run_names <- c("cv_full_1_5")
+
 read_results <- function(run_names){
-    run_results <- read_delim(paste0("results/summaries/",run_names,".txt"), delim = " ")
+    run_results <- read_delim(paste0("results/summaries2/",run_names,".txt"), delim = " ")
 }
 all_accs <- map_df(run_names, read_results) %>% 
                 mutate(chr = as.factor(chr),
                        run = fct_inorder(run),
                        ind_id = as.factor(ind_id))
-all_accs$prop_correct[all_accs$prop_correct < 0.925] <- 0.93 # actually 0.88
+# all_accs$prop_correct[all_accs$prop_correct < 0.925] <- 0.93 # actually 0.88
 
 run_list <- c(
     "cv_1_5_hap_3chr" = "heuristic_short_cores",
@@ -58,7 +60,8 @@ p2
 library(patchwork)
 
 p_out <- p1/p2
-ggsave( "results/summaries/alphaimpute_comparison.jpg", p_out, width = 10, height = 9)
+p_out
+ggsave( "results/summaries/alphaimpute_comparison_ImputeGenotypesHMM.jpg", p_out, width = 10, height = 9)
 
 
 all_accs %>% 

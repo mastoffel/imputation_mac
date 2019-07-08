@@ -16,7 +16,7 @@ imp_res_dir <- paste0("results/", run_name)
 # 2069 6106 6593 1881 1258 2322 1097 4741 1101 2167
 # HMM 10-30 run: c(2069,6106,6593,1881,1258)
 # 3 ind runs: c(2322, 1258,1097)
-inds_imputed <- c(2322, 1258,1097, 6034, 3002, 17, 3076, 2709, 1880, 7359) # 2322, 
+inds_imputed <- c(2322, 1258,1097, 6034, 3002, 17, 3076, 2709, 1880, 7359) # 2322, 1258,1097, 
 chrs <- c(6,14,26)
 
 #### imputed genotypes ####
@@ -41,7 +41,7 @@ to_be_imputed <- read_lines("data/to_be_imputed.txt")
 # grep true genotypes from merged geno txt file
 inds_regex <- paste(inds_imputed, collapse = "|")
 #geno_org <- fread(cmd = paste0("grep -E ", "'", inds_regex, "'", " data/hdld_geno_merged.txt"), sep = " ", na.strings="9")
-geno_org <- fread("data/hdld_geno_merged_sub.txt", sep = " ", na.strings="9")
+geno_org <- fread("data/hdld_geno_merged.txt", sep = " ", na.strings="9")
 geno_org <- geno_org[ID %chin% inds_imputed]
 # subset full genotype data for only the chromosomes of interest
 
@@ -65,15 +65,21 @@ geno_org_t <- geno_org_t[-1, ]
 full_df <- cbind(geno_org_t, geno_imp_t)
 
 # transform dosages to genotypes using strict criteria +- 0.02 to call genotype, else set to missing
-err <- 0
-df_trans <- full_df  %>% 
-    mutate_at(.vars = vars(contains("_")),
-              list(~case_when(
-                  . <= (0 + err) ~ 0,
-                  (. >= (1-err)) & (. <= (1+err)) ~ 1,
-                  (. >= (2-err)) & (. <= (2+err)) ~ 2,
-                  TRUE ~ 9
-              ))) 
+library(stringr)
+if (str_detect(run_name, "HMM")) {
+    df_trans <- full_df
+} else {
+    err <- 0
+    df_trans <- full_df  %>%
+        mutate_at(.vars = vars(contains("_")),
+                  list(~case_when(
+                      . <= (0 + err) ~ 0,
+                      (. >= (1-err)) & (. <= (1+err)) ~ 1,
+                      (. >= (2-err)) & (. <= (2+err)) ~ 2,
+                      TRUE ~ 9
+                  )))
+}
+
 
 # translate 9 to NA
 setDT(df_trans)
@@ -122,16 +128,18 @@ imp_acc <- map(all_inds, calc_imp_results_per_ind, df_trans)
 
 # create large df
 full_acc <- rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name)
-write_delim(full_acc, paste0("results/summaries/", run_name, ".txt"))
+write_delim(full_acc, paste0("results/summaries2/", run_name, ".txt"))
 
 }
 
 
-run_names <- c(#"cv_1_5_hap_3chr", 
-               #"cv_2_10_hap_3chr", 
-               #"cv_10_30_hap_3chr", 
+
+
+run_names <- c("cv_1_5_hap_3chr", 
+               "cv_2_10_hap_3chr", 
+               "cv_10_30_hap_3chr", 
                "HMM_1_5_hap_3chr", 
-               #"HMM_2_10_hap_3chr")
+               "HMM_2_10_hap_3chr",
                "HMM_10_30_hap_3chr")
 
 # write all accuracies to files in results folder

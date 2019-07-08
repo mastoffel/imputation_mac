@@ -1,3 +1,5 @@
+# Here, we make a simple genotype table from the merged plink file
+# select the chromosomes for the genotype file 
 # on mac
 plink_geno_path <- "../sheep/data/SNP_chip/"
 
@@ -10,7 +12,10 @@ sheep_fam <- paste0(plink_geno_path, sheep_plink_name, ".fam")
 full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
 
 # filter names of snps on one chromosome
-all_chr_snps <- full_sample$map %>% filter(chromosome %in% 1:26) %>% .$snp.name
+chr_to_filter <- 27
+
+# all_chr_snps <- full_sample$map %>% filter(chromosome %in% 1:26) %>% .$snp.name
+all_chr_snps <- full_sample$map %>% filter(chromosome %in% chr_to_filter) %>% .$snp.name
 
 # filter those snps from full dataset and coerce from raw to numeric
 sheep_geno <- as(full_sample$genotypes[, all_chr_snps], Class = "numeric")
@@ -52,14 +57,18 @@ merge_geno <- function(vec) {
 # still needs to be merged properly here
 #sheep_geno_dup <- sheep_geno[ID %chin% sheep_geno[["ID"]][1:188]]
 #sheep_geno_merged <- sheep_geno_dup[, lapply(.SD, merge_geno), by=ID]
+sheep_geno_merged <- sheep_geno[, lapply(.SD, merge_geno), by=ID]
 
-sheep_geno_filt <- sheep_geno[!duplicated(sheep_geno[["ID"]])]
+#sheep_geno_filt <- sheep_geno[!duplicated(sheep_geno[["ID"]])]
 
+# filter individuals which are not in pedigree due to some ID error
+not_in_ped <- as.character(c(39,4302,9240,10446,10448,10449,10450,
+                             10451,11076,11077,11079,11388))
 
-
+sheep_geno_filt <- sheep_geno_merged[!(ID %chin% not_in_ped)]
 
 # write to file with col names for masking script
-fwrite(sheep_geno_filt, paste0("data/hdld_geno_merged.txt"), 
+fwrite(sheep_geno_filt, paste0("data/hdld_geno_merged_sex_chr.txt"), 
        sep = " ", col.names = TRUE, na = "9")
 
 # grep -E '^6106|^2069|^6593|^1881|^1258|^2322|^1097|^4741|^1101|^2167'
