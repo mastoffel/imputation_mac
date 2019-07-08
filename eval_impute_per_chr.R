@@ -133,8 +133,6 @@ write_delim(full_acc, paste0("results/summaries2/", run_name, ".txt"))
 }
 
 
-
-
 run_names <- c("cv_1_5_hap_3chr", 
                "cv_2_10_hap_3chr", 
                "cv_10_30_hap_3chr", 
