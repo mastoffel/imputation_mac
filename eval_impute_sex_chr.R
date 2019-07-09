@@ -9,17 +9,19 @@ library(vroom)
 # folder with imputed genotypes (only masked individuals)
 # this was extracted from the ImputedGenotypeProbabilities file
 run_name <- "cv_full_1_5_sex_chr"
-imp_res_dir <- paste0("results/", run_name, "/genos")
+imp_res_dir <- paste0("results/", run_name, "/genos") # genos
 
 inds_imputed <- read_lines("data/inds_for_cv_full_first15.txt")
 chrs <- 27
 
 #### imputed genotypes ####
-read_imputed <- function(chr) {
-    geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chr, ".txt"), header = FALSE) #[V1 %in% inds_imputed]
-    if ((chr != chrs[1])) geno_imp <- geno_imp[,-1]
-    setDF(geno_imp)
-}
+# read_imputed <- function(chr) {
+#     geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chr, ".txt"), header = FALSE) #[V1 %in% inds_imputed]
+#   #  if ((chr != chrs[1])) geno_imp <- geno_imp[,-1]
+#     setDF(geno_imp)
+# }
+
+geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chrs, ".txt"), header = FALSE, nrows = 1, skip = 2)
 
 # how many SNPs per chromosomes?
 geno_imp_list <- map(chrs, read_imputed)
@@ -63,6 +65,17 @@ geno_org_t <- geno_org_t[-1,]
 # bind them together
 full_df <- cbind(geno_org_t, geno_imp_t)
 
+
+# transform dosages to genotypes using strict criteria +- 0.02 to call genotype, else set to missing
+# err <- 0
+# df_trans <- full_df  %>%
+#     mutate_at(.vars = vars(contains("imputed")),
+#               list( ~ case_when(
+#                   . <= (0 + err) ~ 0,
+#                   (. >= (1 - err)) & (. <= (1 + err)) ~ 1,
+#                   (. >= (2 - err)) & (. <= (2 + err)) ~ 2,
+#                   TRUE ~ 9
+#               )))
 
 
 # if no dosages
@@ -139,6 +152,11 @@ calc_imp_results_per_ind <- function(ind_id, df_full) {
 # map accuracy function over individuals
 all_inds <- geno_imp[[1]]
 
+imp_acc <- map(all_inds, calc_imp_results_per_ind, df_trans)
+# create table with all accuracies
+full_acc <-rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name)
+
+
 # sexes
 ind_sex <- read_delim("data/sex_chr_impute_table.txt", delim = " ", col_names = FALSE)
 names(ind_sex) <- c("ind_id", "sex")
@@ -164,7 +182,7 @@ all_accs %>%
     geom_jitter(size = 3, alpha = 0.4)
 
 par_snps <- read_delim("data/Oar3.1_PAR_SNPs_HD.txt", delim = " ", col_names = FALSE)
-df_trans_nopar <- df_trans[(snp %in% par_snps$X1)]
+df_trans_nopar <- df_trans[!(snp %in% par_snps$X1)]
 
 imp_acc <- map(all_inds, calc_imp_results_per_ind, df_trans_nopar)
     # create table with all accuracies
