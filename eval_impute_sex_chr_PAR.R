@@ -8,8 +8,8 @@ library(vroom)
 
 # folder with imputed genotypes (only masked individuals)
 # this was extracted from the ImputedGenotypeProbabilities file
-run_name <- "cv_sex_01_05_nopar"
-imp_res_dir <- paste0("results/", run_name, "/dosages") # genos dosages
+run_name <- "cv_PAR"
+imp_res_dir <- paste0("results/", run_name, "/genos") # genos
 
 inds_imputed <- read_lines("data/inds_for_cv_full_first15.txt")
 chrs <- 27
@@ -21,22 +21,21 @@ chrs <- 27
 #     setDF(geno_imp)
 # }
 
-geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chrs, "_2nd.txt"), header = FALSE)
-
+geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chrs, ".txt"), header = FALSE)
 # how many SNPs?
 chr_lengths <- ncol(geno_imp) - 1
 
+par_snps <- read_lines("data/par_snps_in_data.txt")
 ######## # extract true genotypes ########
-to_be_imputed <- read_lines("data/to_be_imputed_chr27.txt")
-par_snps <- read_lines("data/Oar3.1_PAR_SNPs_HD.txt")
-
+to_be_imputed <- read_lines("data/to_be_imputed_PAR.txt")
 # grep true genotypes from merged geno txt file
 inds_regex <- paste0(" ",paste(inds_imputed, collapse = " | "), " ")
 # geno_org <- fread(cmd = paste0("grep -E ", "'", inds_regex, "'", " data/hdld_geno_merged.txt"), sep = " ", na.strings="9")
 geno_org <- fread("data/hdld_geno_merged_sex_chr.txt", sep = " ", na.strings = "9")
 
 # subset geno_org for individuals present in geno_imp
-geno_org <- geno_org[ID %in% geno_imp$V1, !..par_snps]
+geno_org <- geno_org[ID %in% geno_imp$V1] %>% 
+                select(ID, !!par_snps)
 
 # transform imputed genotypes to long format for faster processing
 geno_imp_t <- data.table::transpose(geno_imp)
@@ -58,16 +57,15 @@ full_df <- cbind(geno_org_t, geno_imp_t)
 
 
 # transform dosages to genotypes using strict criteria +- 0.02 to call genotype, else set to missing
-err <- 0.1
-df_trans <- full_df  %>%
-    mutate_at(.vars = vars(contains("imputed")),
-              list( ~ case_when(
-                  . <= (0 + err) ~ 0,
-                  (. >= (1 - err)) & (. <= (1 + err)) ~ 1,
-                  (. >= (2 - err)) & (. <= (2 + err)) ~ 2,
-                  TRUE ~ 9
-              )))
-
+# err <- 0
+# df_trans <- full_df  %>%
+#     mutate_at(.vars = vars(contains("imputed")),
+#               list( ~ case_when(
+#                   . <= (0 + err) ~ 0,
+#                   (. >= (1 - err)) & (. <= (1 + err)) ~ 1,
+#                   (. >= (2 - err)) & (. <= (2 + err)) ~ 2,
+#                   TRUE ~ 9
+#               )))
 
 
 # if no dosages
@@ -91,11 +89,6 @@ df_trans
 df_trans$chr <- chrs
 df_trans <- df_trans[snp %chin% to_be_imputed]
 setDF(df_trans)
-
-# Oar3.1_PAR_SNPs_HD
-head(df_trans)
-par_snps <- read_delim("data/Oar3.1_PAR_SNPs_HD.txt", delim = " ", col_names = FALSE)
-
 
 # calculate accuracies and proportion of imputed SNPs
 calc_imp_results_per_ind <- function(ind_id, df_full) {
@@ -147,6 +140,7 @@ all_inds <- geno_imp[[1]]
 imp_acc <- map(all_inds, calc_imp_results_per_ind, df_trans)
 # create table with all accuracies
 full_acc <-rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name)
+
 
 # sexes
 ind_sex <- read_delim("data/sex_chr_impute_table.txt", delim = " ", col_names = FALSE)

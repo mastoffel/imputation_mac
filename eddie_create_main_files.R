@@ -10,6 +10,7 @@ library(snpStats)
 library(tidyverse)
 library(data.table)
 source("create_spec_file_merged.R")
+#source("eddie_create_spec_file_merged.R")
 #library(gdata)
 #library("WGCNA")
 # browseVignettes("snpStats")
@@ -81,7 +82,6 @@ rownames(sheep_geno) <- sheep_ids
 # clear some space
 rm(full_sample)
 
-
 # make tibble and put rownames as ID column
 sheep_geno <- as_tibble(sheep_geno, rownames = "ID")
 
@@ -132,9 +132,12 @@ repl_na <- function(DT) {
 }
 repl_na(sheep_geno_merged)
 
-# filter individuals which are not in pedigree due to some ID error
-not_in_ped <- as.character(c(39,4302,9240,10446,10448,10449,10450,
-                             10451,11076,11077,11079,11388))
+# filter individuals which are not in pedigree (due to some ID error?)
+# for the old pedigree
+# not_in_ped <- as.character(c(39,4302,9240,10446,10448,10449,10450,
+#                              10451,11076,11077,11079,11388))
+# for the new pedigree (2018)
+not_in_ped <- as.character(c(7658, 7628, 7217, 5371, -112, -6, 1791, 5986, 7717))
 
 sheep_geno_filt <- sheep_geno_merged[!(ID %chin% not_in_ped)]
 

@@ -72,12 +72,11 @@ full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
 par_snps <- readLines("data/Oar3.1_PAR_SNPs_HD.txt")
 !(par_snps %in% all_chr_snps)
 
-table(full_sample$map$chromosome, useNA = "always")
+# table(full_sample$map$chromosome, useNA = "always")
 # filter names of snps on one chromosome
 all_chr_snps <- full_sample$map %>% # filter(chromosome == chr_num) %>%
                     filter(snp.name %in% par_snps)   %>% 
                     .$snp.name
-
 
 # length(par_snps[!(par_snps %in% all_chr_snps)])
 
