@@ -7,13 +7,20 @@ source("../bottleneck/R/martin.R")
 
 # folder with imputed genotypes (only masked individuals)
 # this was extracted from the ImputedGenotypeProbabilities file
-run_name <- "cv_full_1_5_sex_chr"
+run_name <- "cv_PAR"
 imp_res_dir <- paste0("results/", run_name, "/genos/") # genos
+
+inds_imputed <- read_lines("data/cv_inds.txt")
 chrs <- 27
 
-# imputed genotypes
+#### imputed genotypes ####
+# read_imputed <- function(chr) {
+#     geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chr, ".txt"), header = FALSE) #[V1 %in% inds_imputed]
+#   #  if ((chr != chrs[1])) geno_imp <- geno_imp[,-1]
+#     setDF(geno_imp)
+# }
+
 geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chrs, ".txt"), header = FALSE)
-inds_imputed <- as.character(geno_imp[[1]])
 # how many SNPs?
 chr_lengths <- ncol(geno_imp) - 1
 
@@ -21,8 +28,9 @@ chr_lengths <- ncol(geno_imp) - 1
 
 
 ######## # extract true genotypes ########
-to_be_imputed <- read_lines("data/to_be_imputed_chr27.txt")
+to_be_imputed <- read_lines("data/to_be_imputed_PAR.txt")
 par_snps <- read_lines("data/old/Oar3.1_PAR_SNPs_HD.txt")
+
 
 # true genotypes 
 # plink name
@@ -35,8 +43,8 @@ full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
 
 # filter names of snps on one chromosome
 all_chr_snps <- full_sample$map %>% filter(chromosome == 27) %>% 
-                filter(!(snp.name %in% par_snps)) %>% 
-                .$snp.name
+    filter((snp.name %in% par_snps)) %>% 
+    .$snp.name
 
 geno_org <- as(full_sample$genotypes[, all_chr_snps], Class = "numeric")
 
@@ -138,11 +146,7 @@ all_inds <- geno_imp[[1]]
 
 imp_acc <- map(all_inds, calc_imp_results_per_ind, df_trans)
 # create table with all accuracies
-full_acc <-rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name) 
-
-full_acc %>% write_delim("results/summaries/sex_chr_noPAR_ram.txt")
-
-# 
+full_acc <-rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name)
 
 
 
@@ -164,7 +168,7 @@ acc_acr_chr <- function(start) {
     imp_acc <- map(all_inds, calc_imp_results_per_ind, df_trans[start:(start+500), ])
     # create table with all accuracies
     full_acc <-rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name) %>% 
-                    mutate(start = {{ start }})
+        mutate(start = {{ start }})
 }
 
 all_accs <- map_df(seq(from = 1, to = 16143, by = 100), acc_acr_chr)
@@ -173,14 +177,14 @@ all_accs %>%
     left_join(ind_sex) %>% 
     ggplot(aes(start, prop_correct)) +
     geom_point()
-    geom_boxplot() +
+geom_boxplot() +
     geom_jitter(size = 3, alpha = 0.4)
 
 par_snps <- read_delim("data/Oar3.1_PAR_SNPs_HD.txt", delim = " ", col_names = FALSE)
 df_trans_nopar <- df_trans[!(snp %in% par_snps$X1)]
 
 imp_acc <- map(all_inds, calc_imp_results_per_ind, df_trans_nopar)
-    # create table with all accuracies
+# create table with all accuracies
 full_acc <-rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name)
 
 full_acc %>% 

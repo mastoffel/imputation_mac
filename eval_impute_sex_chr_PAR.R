@@ -4,30 +4,24 @@ library(purrr)
 library(tidyverse)
 library(snpStats)
 source("../bottleneck/R/martin.R")
-library(vroom)
 
 # folder with imputed genotypes (only masked individuals)
 # this was extracted from the ImputedGenotypeProbabilities file
-run_name <- "cv_PAR"
+run_name <- "cv_full_1_5_sex_chr"
 imp_res_dir <- paste0("results/", run_name, "/genos") # genos
 
-inds_imputed <- read_lines("data/inds_for_cv_full_first15.txt")
+inds_imputed <- read_lines("data/cv_inds.txt")
 chrs <- 27
 
 #### imputed genotypes ####
-# read_imputed <- function(chr) {
-#     geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chr, ".txt"), header = FALSE) #[V1 %in% inds_imputed]
-#   #  if ((chr != chrs[1])) geno_imp <- geno_imp[,-1]
-#     setDF(geno_imp)
-# }
-
 geno_imp <- fread(paste0(imp_res_dir, "/genos_chr_", chrs, ".txt"), header = FALSE)
 # how many SNPs?
 chr_lengths <- ncol(geno_imp) - 1
 
-par_snps <- read_lines("data/par_snps_in_data.txt")
+#par_snps <- read_lines("data/par_snps_in_data.txt")
 ######## # extract true genotypes ########
-to_be_imputed <- read_lines("data/to_be_imputed_PAR.txt")
+to_be_imputed <- read_lines("data/to_be_imputed_chr27.txt")
+
 # grep true genotypes from merged geno txt file
 inds_regex <- paste0(" ",paste(inds_imputed, collapse = " | "), " ")
 # geno_org <- fread(cmd = paste0("grep -E ", "'", inds_regex, "'", " data/hdld_geno_merged.txt"), sep = " ", na.strings="9")

@@ -5,13 +5,12 @@ library(tidyverse)
 library(dplyr)
 library(snpStats)
 
-plink_geno_path <- "output/"
 # plink name
-sheep_plink_name <- "sheep_geno_imputed_10062019"
+sheep_plink_name <- "../sheep/data/SNP_chip/ramb_mapping/sheep_geno_imputed_ram_27092019"
 # read merged plink data
-sheep_bed <- paste0(plink_geno_path, sheep_plink_name, ".bed")
-sheep_bim <- paste0(plink_geno_path, sheep_plink_name, ".bim")
-sheep_fam <- paste0(plink_geno_path, sheep_plink_name, ".fam")
+sheep_bed <- paste0(sheep_plink_name, ".bed")
+sheep_bim <- paste0(sheep_plink_name, ".bim")
+sheep_fam <- paste0(sheep_plink_name, ".fam")
 full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
 
 summary(full_sample$genotypes)

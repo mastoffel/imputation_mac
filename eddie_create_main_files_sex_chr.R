@@ -9,7 +9,7 @@
 library(snpStats)
 library(tidyverse)
 library(data.table)
-source("create_spec_file_merged.R")
+source("create_spec_file_merged_sexchr.R")
 #library(gdata)
 #library("WGCNA")
 # browseVignettes("snpStats")
@@ -25,58 +25,53 @@ if (purrr::is_empty(args)) {
 } else if (args[[1]] == "all_chr") { # command for full dataset
     stop("Only accepts chromosome numbers from 1-26 at the moment")
     chr_num <- NULL
-} else if ((as.numeric(args[[1]]) < 27) & (as.numeric(args[[1]]) >= 1)) { # do not allow the sex chromosome for now
+} else if ((as.numeric(args[[1]]) < 28) & (as.numeric(args[[1]]) >= 1)) { # do not allow the sex chromosome for now
     chr_num <- as.numeric(args[[1]])
 } else {
     stop("command line arguments specified wrongly, check R script")
 }
 
-
+chr_num <- 27
 
 ### INPUT FOLDER ###
 ### Contains PLINK FILES, AlphaImputeLinux and Pedigree.txt ###
 
 # on mac
-plink_geno_path <- "../sheep/data/SNP_chip/"
+plink_geno_path <- "../sheep/data/SNP_chip/ramb_mapping/"
 
 # on eddie, also contains the AlphaImputeLinux file and the Pedigree.txt
 #plink_geno_path <- "/exports/csce/eddie/biology/groups/pemberton/martin/plink_genotypes/"
-
 ####################
-
-
 ### OUTPUT FOLDER ###
 
 # on mac
-output_path_chr <- paste0("data/chr_", chr_num)
+output_path_chr <- paste0("output/chr_", chr_num)
 output_path_main_files <- paste0(output_path_chr, "/AI_main_files/")
 
 # on eddie
-#output_path_chr <- paste0("/exports/eddie/scratch/v1mstoff/full_1_5/chr_", chr_num) # main folder
+#output_path_chr <- paste0("/exports/eddie/scratch/v1mstoff/cv_full_1_5_sex_chr/chr_", chr_num) # main folder
 #output_path_main_files <-  paste0(output_path_chr, "/AI_main_files/") # main files for chr1
 
 if (!dir.exists(output_path_chr)) dir.create(output_path_chr, recursive = TRUE)
 if (!dir.exists(output_path_main_files)) dir.create(output_path_main_files)
-
 #####################
 
 # plink name
-sheep_plink_name <- "../sheep/data/SNP_chip/ramb_mapping/merged_sheep_geno_ram"
+sheep_plink_name <- "merged_sheep_geno_ram"
 # read merged plink data
-sheep_bed <- paste0(sheep_plink_name, ".bed")
-sheep_bim <- paste0(sheep_plink_name, ".bim")
-sheep_fam <- paste0(sheep_plink_name, ".fam")
+sheep_bed <- paste0(plink_geno_path, sheep_plink_name, ".bed")
+sheep_bim <- paste0(plink_geno_path, sheep_plink_name, ".bim")
+sheep_fam <- paste0(plink_geno_path, sheep_plink_name, ".fam")
 full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
-
+full_sample$fam
 # pseudoautosomal region SNPs
-par_snps <- readLines("data/old/Oar3.1_PAR_SNPs_HD.txt")
+#par_snps <- readLines("/exports/csce/eddie/biology/groups/pemberton/martin/plink_genotypes/Oar3.1_PAR_SNPs_HD.txt")
+par_snps <- read_delim("../sheep_imputation/data/Oar3.1_PAR_SNPs_HD.txt", " ")[[1]]
 
-# table(full_sample$map$chromosome, useNA = "always")
 # filter names of snps on one chromosome
-all_chr_snps <- full_sample$map %>%
-                    filter(chromosome == chr_num) %>%
-                    filter(!(snp.name %in% par_snps))   %>% 
-                    .$snp.name
+all_chr_snps <- full_sample$map %>%  filter(chromosome == chr_num) %>%
+    dplyr::filter(!(snp.name %in% par_snps))  %>%
+    .$snp.name
 
 # filter those snps from full dataset and coerce from raw to numeric
 sheep_geno <- as(full_sample$genotypes[, all_chr_snps], Class = "numeric")
@@ -100,17 +95,6 @@ geno_missing <- colSums(is.na(sheep_geno_merged))
 to_be_imputed <- names(geno_missing[geno_missing > 0.5 * nrow(sheep_geno_merged)])
 write_lines(to_be_imputed, path = paste0(output_path_main_files,"to_be_imputed.txt"))
 
-# check distribution of available and to-impute snps
-chr27_snps <- full_sample$map %>% 
-    filter(chromosome == chr_num) %>%
-    filter(!(snp.name %in% par_snps)) %>% 
-    mutate(to_impute = ifelse(snp.name %in% to_be_imputed, 1, 0))
-
-ggplot(chr27_snps, aes(position, 1)) + 
-    geom_jitter(aes(color = as.factor(to_impute)), size = 1) +
-    scale_color_manual(values = c("red", "lightgrey")) +
-    scale_alpha_manual(values = c(1, 0.05))
-
 # AlphaImpute wants 9 instead of NA
 setDT(sheep_geno_merged)
 # replace NAs with 9
@@ -121,13 +105,12 @@ repl_na <- function(DT) {
 repl_na(sheep_geno_merged)
 
 # filter individuals which are not in pedigree due to some ID error
-not_in_ped <- as.character(c(39,4302,9240,10446,10448,10449,10450,
-                             10451,11076,11077,11079,11388))
+not_in_ped <- as.character(c(7658, 7628, 7217, 5371, -112, -6, 1791, 5986, 7717))
 
 sheep_geno_filt <- sheep_geno_merged[!(ID %chin% not_in_ped)]
 
 # write to file with col names for masking script
-fwrite(sheep_geno_filt, paste0(output_path_main_files, "Genotypes.txt"), 
+fwrite(sheep_geno_filt, paste0(output_path_main_files, "Genotypes.txt"),
        sep = " ", col.names = TRUE)
 
 

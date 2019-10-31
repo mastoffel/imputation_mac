@@ -9,7 +9,8 @@
 library(snpStats)
 library(tidyverse)
 library(data.table)
-source("create_spec_file_merged.R")
+source("eddie_create_spec_file_merged.R")
+#source("eddie_create_spec_file_merged.R")
 #library(gdata)
 #library("WGCNA")
 # browseVignettes("snpStats")
@@ -17,16 +18,16 @@ source("create_spec_file_merged.R")
 # capture command line arguments
 # either 1-27 for the chromosomes or all_chr for full data
 
-args <- commandArgs(trailingOnly=TRUE)
+chr_inp <- commandArgs(trailingOnly=TRUE)
 
 if (purrr::is_empty(args)) {
     stop("Provide a chromosome number as argument")
     chr_num <- NULL
-} else if (args[[1]] == "all_chr") { # command for full dataset
+} else if (chr_inp[[1]] == "all_chr") { # command for full dataset
     stop("Only accepts chromosome numbers from 1-26 at the moment")
     chr_num <- NULL
-} else if ((as.numeric(args[[1]]) < 27) & (as.numeric(args[[1]]) >= 1)) { # do not allow the sex chromosome for now
-    chr_num <- as.numeric(args[[1]])
+} else if ((as.numeric(chr_inp[[1]]) < 27) & (as.numeric(chr_inp[[1]]) >= 1)) { # do not allow the sex chromosome for now
+    chr_num <- as.numeric(chr_inp[[1]])
 } else {
     stop("command line arguments specified wrongly, check R script")
 }
@@ -37,7 +38,7 @@ if (purrr::is_empty(args)) {
 ### Contains PLINK FILES, AlphaImputeLinux and Pedigree.txt ###
 
 # on mac
-plink_geno_path <- "../sheep/data/SNP_chip/"
+plink_geno_path <- "../sheep/data/SNP_chip/ramb_mapping/"
 
 # on eddie, also contains the AlphaImputeLinux file and the Pedigree.txt
 #plink_geno_path <- "/exports/csce/eddie/biology/groups/pemberton/martin/plink_genotypes/"
@@ -61,22 +62,15 @@ if (!dir.exists(output_path_main_files)) dir.create(output_path_main_files)
 #####################
 
 # plink name
-sheep_plink_name <- "../sheep/data/SNP_chip/ramb_mapping/merged_sheep_geno_ram"
+sheep_plink_name <- "merged_sheep_geno_ram"
 # read merged plink data
-sheep_bed <- paste0(sheep_plink_name, ".bed")
-sheep_bim <- paste0(sheep_plink_name, ".bim")
-sheep_fam <- paste0(sheep_plink_name, ".fam")
+sheep_bed <- paste0(plink_geno_path, sheep_plink_name, ".bed")
+sheep_bim <- paste0(plink_geno_path, sheep_plink_name, ".bim")
+sheep_fam <- paste0(plink_geno_path, sheep_plink_name, ".fam")
 full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
 
-# pseudoautosomal region SNPs
-par_snps <- readLines("data/old/Oar3.1_PAR_SNPs_HD.txt")
-
-# table(full_sample$map$chromosome, useNA = "always")
 # filter names of snps on one chromosome
-all_chr_snps <- full_sample$map %>%
-                    filter(chromosome == chr_num) %>%
-                    filter(!(snp.name %in% par_snps))   %>% 
-                    .$snp.name
+all_chr_snps <- full_sample$map %>% filter(chromosome == chr_num) %>% .$snp.name
 
 # filter those snps from full dataset and coerce from raw to numeric
 sheep_geno <- as(full_sample$genotypes[, all_chr_snps], Class = "numeric")
@@ -96,20 +90,10 @@ create_spec_file(output_path_main_files, ncol(sheep_geno_merged)-1)
 
 # which SNPs are present in the LD but not the HD SNP chip and have to be imputed?
 geno_missing <- colSums(is.na(sheep_geno_merged))
+
 # which SNPs are missing in more than 50% individuals (LD chip SNPs)
 to_be_imputed <- names(geno_missing[geno_missing > 0.5 * nrow(sheep_geno_merged)])
 write_lines(to_be_imputed, path = paste0(output_path_main_files,"to_be_imputed.txt"))
-
-# check distribution of available and to-impute snps
-chr27_snps <- full_sample$map %>% 
-    filter(chromosome == chr_num) %>%
-    filter(!(snp.name %in% par_snps)) %>% 
-    mutate(to_impute = ifelse(snp.name %in% to_be_imputed, 1, 0))
-
-ggplot(chr27_snps, aes(position, 1)) + 
-    geom_jitter(aes(color = as.factor(to_impute)), size = 1) +
-    scale_color_manual(values = c("red", "lightgrey")) +
-    scale_alpha_manual(values = c(1, 0.05))
 
 # AlphaImpute wants 9 instead of NA
 setDT(sheep_geno_merged)
@@ -120,9 +104,10 @@ repl_na <- function(DT) {
 }
 repl_na(sheep_geno_merged)
 
-# filter individuals which are not in pedigree due to some ID error
-not_in_ped <- as.character(c(39,4302,9240,10446,10448,10449,10450,
-                             10451,11076,11077,11079,11388))
+# filter individuals which are not in pedigree (due to some ID error?)
+# for the old pedigree
+# for the new pedigree (2018)
+not_in_ped <- as.character(c(7658, 7628, 7217, 5371, -112, -6, 1791, 5986, 7717))
 
 sheep_geno_filt <- sheep_geno_merged[!(ID %chin% not_in_ped)]
 

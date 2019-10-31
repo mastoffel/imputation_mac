@@ -145,11 +145,29 @@ full_acc <- rbindlist(imp_acc) %>% setDF %>% mutate(run = run_name)
 write_delim(full_acc, paste0("results/summaries2/", run_name, ".txt"))
 
 
+library(viridis)
+full_acc %>% 
+    mutate(chr = as.factor(chr),
+           ind_id = as.factor(ind_id)) %>% 
+    pivot_longer(starts_with("prop"), names_to = "evaluation", values_to = "proportion") %>% 
+ggplot( aes(chr, proportion, color = ind_id)) + 
+    geom_point(size = 2.5, alpha = 0.8) +
+    facet_wrap(.~evaluation, scales = "free_y") + 
+    scale_color_brewer(type = "div") + 
+    theme_classic() + 
+    ylab("Proportion") +
+    xlab("Chromosome") -> p_acc
 
-ggplot(full_acc, )
 
+ggsave("results/figs/acc_ramb_map_2019.jpg", p_acc, width = 7, height = 3)
+# 
 #}
 
+old_acc <- read_delim("results/summaries2/cv_3_hap_2018.txt", ' ')
+new_acc <- full_acc %>% filter(chr !=20 )
+
+plot(old_acc$prop_correct, new_acc$prop_correct)
+sum(round(new_acc$prop_correct,3) - old_acc$prop_correct)
 
 run_names <- c("cv_1_5_hap_3chr", 
                "cv_2_10_hap_3chr", 

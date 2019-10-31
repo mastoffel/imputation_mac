@@ -4,9 +4,9 @@ library(tidyverse)
 
 
 # already cved full run :
-cv_done <- as.numeric(read_lines("data/inds_for_cv_full_first15.txt"))
+cv_done <- as.numeric(read_lines("data/inds_for_cv_full_first10.txt"))
 
-ids <- fread("data/hdld_geno_merged.txt", select = 1, nrows = 188, data.table = FALSE)
+ids <- fread("data/genotypes_imputed_2018.txt", select = 1, nrows = 188, data.table = FALSE, header = FALSE)
 ids_vec <- unlist(ids)
 
 ids_vec_sub <- ids_vec[!(ids_vec %in% cv_done)]
