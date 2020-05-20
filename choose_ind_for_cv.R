@@ -2,6 +2,17 @@ library(data.table)
 library(tidyverse)
 # already cved 2322 1258 1097
 
+ids <- read_delim("../sheep_ID/data/hd_ids.txt", " ")
+ids
+
+# choose 50
+set.seed(144)
+first50 <- sample(ids$id, size = 50, replace = FALSE)
+write_lines(first50, "data/ids_first50.txt")
+
+
+# old
+
 
 # already cved full run :
 cv_done <- as.numeric(read_lines("data/inds_for_cv_full_first10.txt"))

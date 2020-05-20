@@ -19,10 +19,8 @@ chr_lengths <- ncol(geno_imp) - 1
 
 #### imputed genotypes ####
 
-
 ######## # extract true genotypes ########
 to_be_imputed <- read_lines("data/to_be_imputed_chr27.txt")
-par_snps <- read_lines("data/old/Oar3.1_PAR_SNPs_HD.txt")
 
 # true genotypes 
 # plink name
@@ -33,6 +31,10 @@ sheep_bim <- paste0(sheep_plink_name, ".bim")
 sheep_fam <- paste0(sheep_plink_name, ".fam")
 full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
 
+par_snps <- read_lines("data/Ram_PAR_SNPs_HDLD_all.txt")
+
+# these snps were imputed
+#imp_snps_names <- afread("data/imputed_snps_chr27.txt", nrows = 0)
 # filter names of snps on one chromosome
 all_chr_snps <- full_sample$map %>% filter(chromosome == 27) %>% 
                 filter(!(snp.name %in% par_snps)) %>% 

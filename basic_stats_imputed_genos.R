@@ -7,6 +7,7 @@ library(snpStats)
 
 # plink name
 sheep_plink_name <- "../sheep/data/SNP_chip/ramb_mapping/sheep_geno_imputed_ram_27092019"
+sheep_plink_name <- "data/sheep_geno_imputed_ram_01052020"
 # read merged plink data
 sheep_bed <- paste0(sheep_plink_name, ".bed")
 sheep_bim <- paste0(sheep_plink_name, ".bim")
@@ -14,10 +15,11 @@ sheep_fam <- paste0(sheep_plink_name, ".fam")
 full_sample <- read.plink(sheep_bed, sheep_bim, sheep_fam)
 
 summary(full_sample$genotypes)
-
 sheep_geno <- as(full_sample$genotypes, Class = "numeric")
 sheep_geno_log <- is.na(sheep_geno)
 rm(sheep_geno)
+
+sheep_geno_log <- is.na(full_sample$genotypes[, c(1:200000])
 
 missing_snps <- colSums(sheep_geno_log)
 missing_snps_per_ind <- rowSums(sheep_geno_log)
